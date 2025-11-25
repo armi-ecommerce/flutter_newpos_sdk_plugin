@@ -1,3 +1,6 @@
+## 0.2.1-stable
+* fix: moved dartdoc to dev_dependencies to resolve analyzer version conflicts with other packages
+
 ## 0.1.0-stable
 * stable version with fully featured POS communication and card processing
 
@@ -17,4 +20,3 @@
   * Send data to and read from POS
   * Read card data
 * WIP: Set order amount in POS and PIN for required cards.
-
