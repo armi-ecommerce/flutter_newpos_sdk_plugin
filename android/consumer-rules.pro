@@ -1,0 +1,2 @@
+-keep class com.newpos.mposlib.** { *; }
+-dontwarn com.newpos.mposlib.**

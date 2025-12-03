@@ -51,7 +51,7 @@ Lastly, you will need to add the mPOS SDK's **AAR** library to your project's `a
 
 dependencies {
     // Add the path of the AAR file relative to the build.gradle file (recommended, avoid absolute **paths**)
-    compileOnly files('path/to/mposlib-release.aar') 
+    implementation files('path/to/mposlib-release.aar') 
 }
 
 ```
@@ -59,6 +59,28 @@ dependencies {
 This step is important, else your app will not be able to use any of the functions of the POS device.
 
 You can [download the AAR file here](https://github.com/Avila-Tek/flutter_newpos_sdk_plugin/releases/download/0.1.0-stable/mposlib-release.aar).
+
+### Release build tips
+
+- This plugin bundles required XML assets (`AIDS.xml`, `bines.xml`, `needing_pin.xml`) via `pubspec.yaml`. If you fork the plugin, keep them listed so release builds include them.
+- R8/ProGuard: a `consumer-rules.pro` is shipped that keeps `com.newpos.mposlib.*`. If you disable consumer rules, add the keep rule manually to avoid stripping classes in release.
+- Request Bluetooth permissions **before** calling the plugin. The native layer now returns a `BLUETOOTH_PERMISSION_DENIED` error if the app has not granted runtime permissions.
+
+#### Permisos en tiempo de ejecución (Android 7+)
+
+- Android 7–11: además de `BLUETOOTH`/`BLUETOOTH_ADMIN`, necesitas `ACCESS_FINE_LOCATION` o `ACCESS_COARSE_LOCATION` para escanear BLE. Pide la ubicación en runtime antes de `scanBluetoothDevices` o `connectToBluetoothDevice`.
+- Android 12+: usa `BLUETOOTH_SCAN` y `BLUETOOTH_CONNECT` (el ejemplo de manifest ya los incluye). No se necesita ubicación para escanear, pero Google Play puede seguir pidiéndote declarar el uso si la app infiere ubicación.
+
+Ejemplo rápido con el paquete `permission_handler`:
+```dart
+final status = await Permission.bluetoothScan.request();
+final connect = await Permission.bluetoothConnect.request();
+// En Android 7–11, pide también ubicación:
+final location = await Permission.locationWhenInUse.request();
+if (status.isGranted && connect.isGranted && location.isGranted) {
+  await FlutterNewposSdk.scanBluetoothDevices(timeout: Duration(seconds: 10));
+}
+```
 
 ## Usage
 
@@ -87,5 +109,3 @@ When reading the card, the POS might ask for the card's secret PIN if it is requ
 ---
 
 For more information, you can read the [library documentation](https://avila-tek.github.io/flutter_newpos_sdk_plugin/flutter_newpos_sdk/flutter_newpos_sdk-library.html).
-
-

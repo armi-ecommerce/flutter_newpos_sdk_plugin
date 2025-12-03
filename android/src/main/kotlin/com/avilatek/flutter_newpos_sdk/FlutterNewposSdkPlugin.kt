@@ -6,6 +6,7 @@ import android.app.Activity
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.core.app.ActivityCompat
@@ -64,6 +65,13 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         _activityBinding = null;
     }
     override fun onDetachedFromActivity(){
+        try {
+            if (::posManager.isInitialized) {
+                posManager.stopScan()
+                posManager.disconnectDevice()
+            }
+        } catch (_: Exception) {
+        }
         _activityBinding = null;
     }
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -77,43 +85,40 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
     Log.d("FlutterNewposSdkPlugin", "registrar")
 
-    val assetManager = getApplicationContext()!!.assets
-    /// Needing pin file
-    val needingPin: InputStream = assetManager.open("needing_pin.xml")
-    val documentBuilderFactory = DocumentBuilderFactory.newInstance()
-    val documentBuilder = documentBuilderFactory.newDocumentBuilder()
-    val document = documentBuilder.parse(needingPin)
-    document.documentElement.normalize()
-
-      Log.d("FlutterNewposSdkPlugin", "assetManager")
-
-
-      /// AIDS file
-//      val assetManager2 = getApplicationContext()!!.assets
-      val aids: InputStream = assetManager.open("AIDS.xml")
-    val documentBuilderFactoryAids = DocumentBuilderFactory.newInstance()
-    val documentBuilderAids = documentBuilderFactoryAids.newDocumentBuilder()
-    val documentAids = documentBuilderAids.parse(aids)
-    documentAids.documentElement.normalize()
-    Log.d("FlutterNewposSdkPlugin", "assetManagerAids")
-
-
-    /// BINES file
-//      val assetManager3 = getApplicationContext()!!.assets
-
-      val bines: InputStream = assetManager.open("bines.xml")
-    val documentBuilderFactoryBines = DocumentBuilderFactory.newInstance()
-    val documentBuilderBines = documentBuilderFactoryBines.newDocumentBuilder()
-    val documentBines = documentBuilderBines.parse(bines)
-    documentBines.documentElement.normalize()
-
-
-      Log.d("FlutterNewposSdkPlugin", "assetManagerBines")
-
-
-    // El delegate del POS. Esta es la implementación del comportamiento que va a tomar el POS
-    // al conectarse a la app
     try {
+        val assetManager = getApplicationContext()!!.assets
+        /// Needing pin file
+        val needingPin: InputStream = assetManager.open("needing_pin.xml")
+        val documentBuilderFactory = DocumentBuilderFactory.newInstance()
+        val documentBuilder = documentBuilderFactory.newDocumentBuilder()
+        val document = documentBuilder.parse(needingPin)
+        document.documentElement.normalize()
+
+        Log.d("FlutterNewposSdkPlugin", "assetManager")
+
+
+        /// AIDS file
+        val aids: InputStream = assetManager.open("AIDS.xml")
+        val documentBuilderFactoryAids = DocumentBuilderFactory.newInstance()
+        val documentBuilderAids = documentBuilderFactoryAids.newDocumentBuilder()
+        val documentAids = documentBuilderAids.parse(aids)
+        documentAids.documentElement.normalize()
+        Log.d("FlutterNewposSdkPlugin", "assetManagerAids")
+
+
+        /// BINES file
+
+        val bines: InputStream = assetManager.open("bines.xml")
+        val documentBuilderFactoryBines = DocumentBuilderFactory.newInstance()
+        val documentBuilderBines = documentBuilderFactoryBines.newDocumentBuilder()
+        val documentBines = documentBuilderBines.parse(bines)
+        documentBines.documentElement.normalize()
+
+        Log.d("FlutterNewposSdkPlugin", "assetManagerBines")
+
+
+        // El delegate del POS. Esta es la implementación del comportamiento que va a tomar el POS
+        // al conectarse a la app
         val delegate = FlutterPosDelegate(channel, document, documentAids, documentBines)
         Log.d("FlutterNewposSdkPlugin", "delegate")
         posManager = NpPosManager.sharedInstance(_pluginBinding!!.applicationContext, delegate)
@@ -144,18 +149,19 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
     if (activity == null) {
         Log.d("FlutterNewposSdkPlugin", "Activity is Null")
+        result.error("NO_ACTIVITY", "Activity is null; ensure plugin is attached to an Activity", null)
         return
     }
-               if (ActivityCompat.checkSelfPermission(
-                activity,
-                   Manifest.permission.BLUETOOTH_CONNECT
 
-               ) != PackageManager.PERMISSION_GRANTED
-           ) {
-
-               ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.BLUETOOTH_CONNECT,Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_PRIVILEGED), 1)
-           }
-    Log.d("FlutterNewposSdkPlugin", "requestPermissions")
+    if (!hasBluetoothPermissions(activity)) {
+        Log.d("FlutterNewposSdkPlugin", "Bluetooth permissions are not granted")
+        result.error(
+            "BLUETOOTH_PERMISSION_DENIED",
+            "Bluetooth permissions are not granted. Request them before calling this method.",
+            null
+        )
+        return
+    }
     Log.d("FlutterNewposSdkPlugin", "Method called ${call.method}")
 
 
@@ -330,6 +336,38 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
     fun getActivity(): Activity? {
         return _activityBinding?.activity ?: null
+    }
+
+    private fun hasBluetoothPermissions(activity: Activity): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ActivityCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                    activity,
+                    Manifest.permission.BLUETOOTH_SCAN
+                ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ActivityCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.BLUETOOTH
+            ) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                    activity,
+                    Manifest.permission.BLUETOOTH_ADMIN
+                ) == PackageManager.PERMISSION_GRANTED &&
+                (
+                    ActivityCompat.checkSelfPermission(
+                        activity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED ||
+                        ActivityCompat.checkSelfPermission(
+                            activity,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    )
+        }
     }
 
  

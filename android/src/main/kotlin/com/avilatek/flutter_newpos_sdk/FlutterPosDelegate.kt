@@ -258,19 +258,32 @@ class FlutterPosDelegate(private val channel: MethodChannel, private val documen
         Log.d("onGetReadCardInfo","TUSN -> ${cardInfoEntity?.getKsn()}")
         Log.d("onGetReadCardInfo","---------------------")
 
-        var cardNumber = cardInfoEntity?.cardNumber;
-        var cardType = cardInfoEntity?.cardType;
-        var cardholderName = cardInfoEntity?.cardholderName;
-        var csn = cardInfoEntity?.csn;
-        var encryptPin = cardInfoEntity?.encryptPin;
-        var encryptedSN = cardInfoEntity?.encryptedSN;
-        var expDate = cardInfoEntity?.expDate;
-        var ic55Data = cardInfoEntity?.ic55Data;
-        var track1 = cardInfoEntity?.track1;
-        var track2 = cardInfoEntity?.track2;
-        var track3 = cardInfoEntity?.track3;
-        var tusn = cardInfoEntity?.tusn;
-        var ksn = cardInfoEntity?.getKsn();
+        if (cardInfoEntity == null) {
+            Handler(Looper.getMainLooper()).post {
+                channel.invokeMethod(
+                    "OnReceiveErrorCode",
+                    hashMapOf<String, Any?>(
+                        "code" to -1,
+                        "message" to "Card info entity is null"
+                    )
+                )
+            }
+            return
+        }
+
+        val cardNumber = cardInfoEntity?.cardNumber
+        val cardType = cardInfoEntity?.cardType
+        val cardholderName = cardInfoEntity?.cardholderName
+        val csn = cardInfoEntity?.csn
+        val encryptPin = cardInfoEntity?.encryptPin
+        val encryptedSN = cardInfoEntity?.encryptedSN
+        val expDate = cardInfoEntity?.expDate
+        val ic55Data = cardInfoEntity?.ic55Data
+        val track1 = cardInfoEntity?.track1
+        val track2 = cardInfoEntity?.track2
+        val track3 = cardInfoEntity?.track3
+        val tusn = cardInfoEntity?.tusn
+        val ksn = cardInfoEntity?.getKsn()
 
         val data = hashMapOf<String, Any?>()
         data["cardNumber"] = cardNumber
@@ -288,21 +301,28 @@ class FlutterPosDelegate(private val channel: MethodChannel, private val documen
         data["ksn"] = ksn
         Handler(Looper.getMainLooper()).post {
             Log.d("Ger Read Card Info","Read Requires pin")
-            
-            /// Get requiresPin field
-            val track2 = cardInfoEntity!!.track2
-            val exp = cardInfoEntity!!.expDate
-            val tag9F34 = cardInfoEntity!!.ic55Data.split("9F34").toTypedArray()[1]
+
+            if (ic55Data.isNullOrEmpty()) {
+                data["requiresPin"] = false
+                channel.invokeMethod("OnGetReadCardInfo", data)
+                return@post
+            }
+
+            val tag9F34Parts = ic55Data.split("9F34").toTypedArray()
+            val tag9F34 = if (tag9F34Parts.size > 1) tag9F34Parts[1] else ""
             var tag4F: String? = null
-            val array4F = cardInfoEntity.ic55Data.split("4F").toTypedArray()
-            if (array4F != null) {
-                if (array4F.size > 2) tag4F = array4F[2].substring(array4F[2].length - 2)
-                if (array4F.size > 1) tag4F = array4F[1].substring(array4F[1].length - 2)
+            val array4F = ic55Data.split("4F").toTypedArray()
+            if (array4F.size > 2) {
+                val candidate = array4F[2]
+                if (candidate.length >= 2) tag4F = candidate.takeLast(2)
+            } else if (array4F.size > 1) {
+                val candidate = array4F[1]
+                if (candidate.length >= 2) tag4F = candidate.takeLast(2)
             }
             Log.d("Tag4F",tag4F ?: "")
 
-
-            val requiresPin: Boolean = needsPin(tag9F34.substring(2, 4))
+            val tagRes = if (tag9F34.length >= 4) tag9F34.substring(2, 4) else ""
+            val requiresPin: Boolean = if (tagRes.isEmpty()) false else needsPin(tagRes)
             data["requiresPin"] = requiresPin
             val cardTypeRead: String? = getCardType(tag4F ?: "", cardNumber ?: "");
             data["cardType"] = cardTypeRead
@@ -365,7 +385,10 @@ class FlutterPosDelegate(private val channel: MethodChannel, private val documen
     override fun onReceiveErrorCode(error: Int, message: String?) {
         Log.d("onReceiveErrorCode","‼️ ERROR CODE -> code: $error; message: $message ")
         Handler(Looper.getMainLooper()).post {
-            channel.invokeMethod("OnReceiveErrorCode", true)
+            val data = hashMapOf<String, Any?>()
+            data["code"] = error
+            data["message"] = message
+            channel.invokeMethod("OnReceiveErrorCode", data)
         }
 
     }
