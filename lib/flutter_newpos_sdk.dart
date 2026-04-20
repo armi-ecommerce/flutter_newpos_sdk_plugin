@@ -3,6 +3,7 @@ library flutter_newpos_sdk;
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_newpos_sdk/src/models/card_type.dart';
 

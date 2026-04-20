@@ -18,27 +18,23 @@ class FlutterNewposSdk {
   static bool _initialized = false;
 
   /// Native platform channel
-  static const MethodChannel _methods =
-      MethodChannel('flutter_newpos_sdk/methods');
+  static const MethodChannel _methods = MethodChannel('flutter_newpos_sdk/methods');
 
   /// stream used for the isScanning public api
   static final _isScanning = _StreamController<bool>(initialValue: false);
 
   /// stream used for the isScanning public api
-  static final _isConnectedToDevice =
-      _StreamController<bool>(initialValue: false);
+  static final _isConnectedToDevice = _StreamController<bool>(initialValue: false);
 
   /// Stream used for the scanResults public api
-  static final _scanResultsList =
-      _StreamController<List<DeviceScanned>>(initialValue: []);
+  static final _scanResultsList = _StreamController<List<DeviceScanned>>(initialValue: []);
 
   /// the subscription to the scan results stream
   static StreamSubscription<dynamic>? _scanSubscription;
 
   /// a broadcast stream version of the MethodChannel
   // ignore: close_sinks
-  static final StreamController<MethodCall> _methodStream =
-      StreamController.broadcast();
+  static final StreamController<MethodCall> _methodStream = StreamController.broadcast();
 
   /// Timeout for scanning that can be cancelled by stopScan
   static Timer? _scanTimeout;
@@ -68,9 +64,7 @@ class FlutterNewposSdk {
 
   static Future<void> clearAids() async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnClearAids')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnClearAids').map((m) {
       return m.arguments as bool;
     });
     try {
@@ -129,9 +123,7 @@ class FlutterNewposSdk {
   /// * `FlutterPosException` with the code `ADD_AID_FAILURE` if the AID is already added.
   static Future<void> addAid(String aid) async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnAddAidSuccess')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnAddAidSuccess').map((m) {
       return m.arguments as bool;
     });
     try {
@@ -191,9 +183,7 @@ class FlutterNewposSdk {
   /// * `FlutterPosException` with the code `ADD_RID_FAILURE` if the RID is already added.
   static Future<void> addRid(String rid) async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnAddRidSuccess')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnAddRidSuccess').map((m) {
       return m.arguments as bool;
     });
     try {
@@ -271,9 +261,7 @@ class FlutterNewposSdk {
     Duration duration = const Duration(seconds: 3),
   }) async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnDisplayTextOnScreenSuccess')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnDisplayTextOnScreenSuccess').map((m) {
       return m.arguments as bool;
     });
     try {
@@ -347,9 +335,7 @@ class FlutterNewposSdk {
     bool ifDukpt = false,
   }) async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnUpdateMasterKeySuccess')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnUpdateMasterKeySuccess').map((m) {
       return m.arguments as bool;
     });
     try {
@@ -423,9 +409,7 @@ class FlutterNewposSdk {
   /// ```
   static Future<DeviceInfo> getDeviceInfo() async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnGetDeviceInfo')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnGetDeviceInfo').map((m) {
       final arguments = m.arguments as Map<Object?, Object?>;
       final convertedMap = <dynamic, dynamic>{};
       arguments.forEach((key, value) {
@@ -504,9 +488,7 @@ class FlutterNewposSdk {
     // Sets the scanning flag to true
     _isScanning.add(true);
 
-    final responseStream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnScanResponse')
-        .map((m) {
+    final responseStream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnScanResponse').map((m) {
       final arguments = m.arguments as Map<Object?, Object?>;
       final convertedMap = <dynamic, dynamic>{};
       arguments.forEach((key, value) {
@@ -580,9 +562,7 @@ class FlutterNewposSdk {
 
   static Future<bool> disconnectDevice() async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnDeviceDisConnected')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnDeviceDisConnected').map((m) {
       return m.arguments as bool;
     });
 
@@ -639,9 +619,7 @@ class FlutterNewposSdk {
     Duration timeout = const Duration(seconds: 15),
   }) async {
     /// Stream method
-    final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnDeviceConnected')
-        .map((m) {
+    final stream = FlutterNewposSdk._methodStream.stream.where((m) => m.method == 'OnDeviceConnected').map((m) {
       return m.arguments as bool;
     });
 
@@ -668,25 +646,110 @@ class FlutterNewposSdk {
     }
   }
 
+  static ({
+    ReadCardInfo? card,
+    FlutterPosException? error,
+  }) _readCardStreamResult(
+    MethodCall methodCall, {
+    required String defaultCode,
+    required String defaultMessage,
+  }) {
+    if (methodCall.method == 'OnGetReadCardInfoError') {
+      return (
+        card: null,
+        error: _readCardExceptionFromArguments(
+          methodCall.arguments,
+          defaultCode: defaultCode,
+          defaultMessage: defaultMessage,
+        ),
+      );
+    }
+
+    final arguments = methodCall.arguments as Map<Object?, Object?>;
+    final convertedMap = <String, dynamic>{};
+    arguments.forEach((key, value) {
+      if (key is String) {
+        convertedMap[key] = value;
+      }
+    });
+
+    return (
+      card: ReadCardInfo.fromJson(convertedMap),
+      error: null,
+    );
+  }
+
+  static FlutterPosException _readCardExceptionFromArguments(
+    dynamic arguments, {
+    required String defaultCode,
+    required String defaultMessage,
+  }) {
+    if (arguments is Map<Object?, Object?>) {
+      final details = <String, dynamic>{};
+      arguments.forEach((key, value) {
+        if (key != null) {
+          details[key.toString()] = value;
+        }
+      });
+
+      final rawCode = details['code']?.toString();
+      final code = (rawCode == null || rawCode.isEmpty) ? defaultCode : rawCode;
+      final rawMessage = details['message'];
+      final message = rawMessage is String && rawMessage.isNotEmpty ? rawMessage : defaultMessage;
+
+      return FlutterPosException(
+        code: code,
+        message: message,
+        details: details,
+      );
+    }
+
+    return FlutterPosException(
+      code: defaultCode,
+      message: defaultMessage,
+    );
+  }
+
+  // Helper exposed for package-level testing of error mapping.
+  @visibleForTesting
+  static FlutterPosException mapReadCardErrorForTest(
+    dynamic arguments, {
+    required String defaultCode,
+    required String defaultMessage,
+  }) {
+    return _readCardExceptionFromArguments(
+      arguments,
+      defaultCode: defaultCode,
+      defaultMessage: defaultMessage,
+    );
+  }
+
+  // Helper exposed for package-level testing of stream event mapping.
+  @visibleForTesting
+  static ({
+    ReadCardInfo? card,
+    FlutterPosException? error,
+  }) mapReadCardEventForTest(
+    MethodCall methodCall, {
+    required String defaultCode,
+    required String defaultMessage,
+  }) {
+    return _readCardStreamResult(
+      methodCall,
+      defaultCode: defaultCode,
+      defaultMessage: defaultMessage,
+    );
+  }
+
   static Future<ReadCardInfo?> getCardNumber() async {
     /// Stream method
     final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) =>
-            m.method == 'OnGetReadCardInfo' ||
-            m.method == 'OnGetReadCardInfoError')
-        .map((m) {
-      if (m.method == 'OnGetReadCardInfoError') {
-        return null;
-      }
-      final arguments = m.arguments as Map<Object?, Object?>;
-      final convertedMap = <String, dynamic>{};
-      arguments.forEach((key, value) {
-        if (key is String) {
-          convertedMap[key] = value;
-        }
-      });
-      return ReadCardInfo.fromJson(convertedMap);
-    });
+        .where((m) => m.method == 'OnGetReadCardInfo' || m.method == 'OnGetReadCardInfoError')
+        .map((m) => _readCardStreamResult(
+              m,
+              defaultCode: 'GET_CARD_NUMBER_ERROR',
+              defaultMessage: 'Error getting card information',
+            ));
     try {
       await _invokeMethod('getCardNumber', 30);
       final streamOutput = await getFirstResultInStream(
@@ -694,17 +757,34 @@ class FlutterNewposSdk {
         const Duration(seconds: 30),
       );
 
-      if (streamOutput == null) {
+      if (streamOutput?.error != null) {
+        throw streamOutput!.error!;
+      }
+
+      if (streamOutput?.card == null) {
         throw const FlutterPosException(
           code: 'GET_CARD_NUMBER_ERROR',
           message: 'Error getting card information',
         );
       }
-      return streamOutput;
+      return streamOutput!.card;
     } on TimeoutException {
       rethrow;
-    } catch (e) {
-      throw BluetoothConnectionFailed(code: '');
+    } on FlutterPosException {
+      rethrow;
+    } on PlatformException catch (e) {
+      throw FlutterPosException(
+        code: e.code.isNotEmpty ? e.code : 'GET_CARD_NUMBER_ERROR',
+        message: e.message ?? 'Error getting card information',
+        details: {
+          'details': e.details,
+        },
+      );
+    } catch (_) {
+      throw const FlutterPosException(
+        code: 'GET_CARD_NUMBER_ERROR',
+        message: 'Error getting card information',
+      );
     }
   }
 
@@ -783,32 +863,32 @@ class FlutterNewposSdk {
       // 2. Filter the stream to only get relevant events.
       // 3. Map the event to a `ReadCardInfo` object using conversion logic.
       final stream = FlutterNewposSdk._methodStream.stream
-          .where((m) =>
-              m.method == 'OnGetReadCardInfo' ||
-              m.method == 'OnGetReadCardInfoError')
+          .where((m) => m.method == 'OnGetReadCardInfo' || m.method == 'OnGetReadCardInfoError')
           .map((m) {
-        if (m.method == 'OnGetReadCardInfoError') {
-          return null;
+        final result = _readCardStreamResult(
+          m,
+          defaultCode: 'COMPLETE_TRANSACTION_EXCEPTION',
+          defaultMessage: 'Exception reading card',
+        );
+        if (result.card != null) {
+          log('From map ${result.card!.toJson()}', name: 'completeTransaction');
         }
-        final arguments = m.arguments as Map<Object?, Object?>;
-        final convertedMap = <String, dynamic>{};
-        arguments.forEach((key, value) {
-          if (key is String) {
-            convertedMap[key] = value;
-          }
-        });
-        log('From map $convertedMap', name: 'completeTransaction');
-        return ReadCardInfo.fromJson(convertedMap);
+        return result;
       });
 
       await _invokeMethod('completeTransaction', amount);
       // 2. Get the first `ReadCardInfo` object from the stream within 10 seconds.
       // If no card is read within the timeout, throw an exception.
-      final card = await getFirstResultInStream(
+      final readCardResult = await getFirstResultInStream(
         stream,
         const Duration(seconds: 10),
       );
 
+      if (readCardResult?.error != null) {
+        throw readCardResult!.error!;
+      }
+
+      final card = readCardResult?.card;
       if (card == null) {
         throw const FlutterPosException(
           code: 'COMPLETE_TRANSACTION_EXCEPTION',
@@ -853,10 +933,23 @@ class FlutterNewposSdk {
     // Rethrow TimeoutExceptions to propagate them to the caller.
     on TimeoutException {
       rethrow;
+    } on FlutterPosException {
+      rethrow;
+    } on PlatformException catch (e) {
+      throw FlutterPosException(
+        code: e.code.isNotEmpty ? e.code : 'COMPLETE_TRANSACTION_EXCEPTION',
+        message: e.message ?? 'Exception reading card',
+        details: {
+          'details': e.details,
+        },
+      );
     }
     // Catch any other exceptions and throw a customized `BluetoothConnectionFailed` exception.
-    catch (e) {
-      throw BluetoothConnectionFailed();
+    catch (_) {
+      throw const FlutterPosException(
+        code: 'COMPLETE_TRANSACTION_EXCEPTION',
+        message: 'Exception reading card',
+      );
     }
   }
 
