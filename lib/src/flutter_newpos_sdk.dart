@@ -710,6 +710,25 @@ class FlutterNewposSdk {
     );
   }
 
+  static Map<String, dynamic>? _platformExceptionDetails(dynamic details) {
+    if (details == null) {
+      return null;
+    }
+    if (details is Map<Object?, Object?>) {
+      final converted = <String, dynamic>{};
+      details.forEach((key, value) {
+        if (key != null) {
+          converted[key.toString()] = value;
+        }
+      });
+      return converted;
+    }
+    if (details is Map<String, dynamic>) {
+      return details;
+    }
+    return null;
+  }
+
   // Helper exposed for package-level testing of error mapping.
   @visibleForTesting
   static FlutterPosException mapReadCardErrorForTest(
@@ -776,9 +795,7 @@ class FlutterNewposSdk {
       throw FlutterPosException(
         code: e.code.isNotEmpty ? e.code : 'GET_CARD_NUMBER_ERROR',
         message: e.message ?? 'Error getting card information',
-        details: {
-          'details': e.details,
-        },
+        details: _platformExceptionDetails(e.details),
       );
     } catch (_) {
       throw const FlutterPosException(
@@ -871,7 +888,7 @@ class FlutterNewposSdk {
           defaultMessage: 'Exception reading card',
         );
         if (result.card != null) {
-          log('From map ${result.card!.toJson()}', name: 'completeTransaction');
+          log('Read card event received', name: 'completeTransaction');
         }
         return result;
       });
@@ -939,9 +956,7 @@ class FlutterNewposSdk {
       throw FlutterPosException(
         code: e.code.isNotEmpty ? e.code : 'COMPLETE_TRANSACTION_EXCEPTION',
         message: e.message ?? 'Exception reading card',
-        details: {
-          'details': e.details,
-        },
+        details: _platformExceptionDetails(e.details),
       );
     }
     // Catch any other exceptions and throw a customized `BluetoothConnectionFailed` exception.

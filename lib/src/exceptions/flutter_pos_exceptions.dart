@@ -12,7 +12,8 @@ class FlutterPosException implements Exception {
 
   @override
   String toString() {
-    return 'FlutterPosException(code: $code, message: $message, details: $details)';
+    final detailsSummary = details == null ? 'null' : '<redacted>';
+    return 'FlutterPosException(code: $code, message: $message, details: $detailsSummary)';
   }
 }
 
