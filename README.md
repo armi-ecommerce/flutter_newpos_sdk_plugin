@@ -73,11 +73,22 @@ You can [download the AAR file here](https://github.com/Avila-Tek/flutter_newpos
 
 Ejemplo rápido con el paquete `permission_handler`:
 ```dart
+import 'dart:io' show Platform;
+import 'package:device_info_plus/device_info_plus.dart';
+
 final status = await Permission.bluetoothScan.request();
 final connect = await Permission.bluetoothConnect.request();
-// En Android 7–11, pide también ubicación:
-final location = await Permission.locationWhenInUse.request();
-if (status.isGranted && connect.isGranted && location.isGranted) {
+
+var locationGranted = true;
+if (Platform.isAndroid) {
+  final sdkInt = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
+  if (sdkInt >= 24 && sdkInt <= 30) {
+    final location = await Permission.locationWhenInUse.request();
+    locationGranted = location.isGranted;
+  }
+}
+
+if (status.isGranted && connect.isGranted && locationGranted) {
   await FlutterNewposSdk.scanBluetoothDevices(timeout: Duration(seconds: 10));
 }
 ```

@@ -32,7 +32,7 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private var channel: MethodChannel? = null
-  private lateinit var posManager: NpPosManager
+  private var posManager: NpPosManager? = null
   private var _activityBinding: ActivityPluginBinding? = null
   private var _pluginBinding: FlutterPlugin.FlutterPluginBinding? = null
 
@@ -49,6 +49,7 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         safeStopAndDisconnect()
+        posManager = null
         channel?.setMethodCallHandler(null)
         channel = null
         _pluginBinding = null
@@ -271,7 +272,7 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun initPosManagerIfNeeded() {
-    if (::posManager.isInitialized) {
+    if (posManager != null) {
         return
     }
 
@@ -283,9 +284,9 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     try {
-        val document = parseXmlAsset("needing_pin.xml")
-        val documentAids = parseXmlAsset("AIDS.xml")
-        val documentBines = parseXmlAsset("bines.xml")
+        val document = parseXmlAsset(pluginBinding, "assets/needing_pin.xml")
+        val documentAids = parseXmlAsset(pluginBinding, "assets/AIDS.xml")
+        val documentBines = parseXmlAsset(pluginBinding, "assets/bines.xml")
 
         // Delegate that routes POS callbacks to Flutter.
         val delegate = FlutterPosDelegate(methodChannel, document, documentAids, documentBines)
@@ -297,11 +298,14 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     }
   }
 
-  private fun parseXmlAsset(assetName: String): Document {
-    val applicationContext = getApplicationContext()
-        ?: throw IllegalStateException("Application context is not available")
+  private fun parseXmlAsset(
+    flutterPluginBinding: FlutterPlugin.FlutterPluginBinding,
+    assetName: String
+  ): Document {
+    val applicationContext = flutterPluginBinding.applicationContext
+    val resolvedPath = flutterPluginBinding.flutterAssets.getAssetFilePathByName(assetName)
 
-    applicationContext.assets.open(assetName).use { input ->
+    applicationContext.assets.open(resolvedPath).use { input ->
         val documentBuilderFactory = DocumentBuilderFactory.newInstance()
         val documentBuilder = documentBuilderFactory.newDocumentBuilder()
         val document = documentBuilder.parse(input)
@@ -314,7 +318,10 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     result: MCLib.Result,
     action: (NpPosManager) -> Unit
   ) {
-    if (!::posManager.isInitialized) {
+    // Attempt lazy re-init to recover from detach/reattach cycles.
+    initPosManagerIfNeeded()
+    val manager = posManager
+    if (manager == null) {
         result.error(
             "POS_NOT_INITIALIZED",
             "POS manager is not initialized. Ensure plugin is attached to an Activity.",
@@ -323,16 +330,19 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         return
     }
 
-    action(posManager)
+    action(manager)
   }
 
   private fun safeStopAndDisconnect() {
+    val manager = posManager
     try {
-        if (::posManager.isInitialized) {
-            posManager.stopScan()
-            posManager.disconnectDevice()
+        if (manager != null) {
+            manager.stopScan()
+            manager.disconnectDevice()
         }
     } catch (_: Exception) {
+    } finally {
+        posManager = null
     }
   }
 

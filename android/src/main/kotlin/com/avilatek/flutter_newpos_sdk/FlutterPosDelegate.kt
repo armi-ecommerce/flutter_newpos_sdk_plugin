@@ -259,14 +259,14 @@ class FlutterPosDelegate(private val channel: MethodChannel, private val documen
         Log.d("onGetReadCardInfo","---------------------")
 
         if (cardInfoEntity == null) {
+            val errorData = hashMapOf<String, Any?>(
+                "code" to -1,
+                "message" to "Card info entity is null"
+            )
             Handler(Looper.getMainLooper()).post {
-                channel.invokeMethod(
-                    "OnReceiveErrorCode",
-                    hashMapOf<String, Any?>(
-                        "code" to -1,
-                        "message" to "Card info entity is null"
-                    )
-                )
+                channel.invokeMethod("OnReceiveErrorCode", errorData)
+                // Completes read-card flows so Dart callers do not wait until timeout.
+                channel.invokeMethod("OnGetReadCardInfoError", errorData)
             }
             return
         }

@@ -671,8 +671,13 @@ class FlutterNewposSdk {
   static Future<ReadCardInfo?> getCardNumber() async {
     /// Stream method
     final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnGetReadCardInfo')
+        .where((m) =>
+            m.method == 'OnGetReadCardInfo' ||
+            m.method == 'OnGetReadCardInfoError')
         .map((m) {
+      if (m.method == 'OnGetReadCardInfoError') {
+        return null;
+      }
       final arguments = m.arguments as Map<Object?, Object?>;
       final convertedMap = <String, dynamic>{};
       arguments.forEach((key, value) {
@@ -689,8 +694,12 @@ class FlutterNewposSdk {
         const Duration(seconds: 30),
       );
 
-      // ! Puede devolver true, pero con un resultado que no es exitoso
-
+      if (streamOutput == null) {
+        throw const FlutterPosException(
+          code: 'GET_CARD_NUMBER_ERROR',
+          message: 'Error getting card information',
+        );
+      }
       return streamOutput;
     } on TimeoutException {
       rethrow;
@@ -774,8 +783,13 @@ class FlutterNewposSdk {
       // 2. Filter the stream to only get relevant events.
       // 3. Map the event to a `ReadCardInfo` object using conversion logic.
       final stream = FlutterNewposSdk._methodStream.stream
-          .where((m) => m.method == 'OnGetReadCardInfo')
+          .where((m) =>
+              m.method == 'OnGetReadCardInfo' ||
+              m.method == 'OnGetReadCardInfoError')
           .map((m) {
+        if (m.method == 'OnGetReadCardInfoError') {
+          return null;
+        }
         final arguments = m.arguments as Map<Object?, Object?>;
         final convertedMap = <String, dynamic>{};
         arguments.forEach((key, value) {

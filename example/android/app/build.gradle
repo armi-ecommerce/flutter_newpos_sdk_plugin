@@ -69,6 +69,5 @@ flutter {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
-    implementation files('libs/mposlib-release.aar')
     implementation 'androidx.multidex:multidex:2.0.1'
 }
