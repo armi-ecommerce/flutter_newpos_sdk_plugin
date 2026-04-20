@@ -65,6 +65,15 @@ android {
         minSdkVersion 19
     }
 
+    buildTypes {
+        release {
+            consumerProguardFiles 'consumer-rules.pro'
+        }
+        debug {
+            consumerProguardFiles 'consumer-rules.pro'
+        }
+    }
+
     dependencies {
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.0.0'

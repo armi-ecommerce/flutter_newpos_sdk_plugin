@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -22,27 +22,20 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 android {
-    lintOptions {
-        checkReleaseBuilds false
-    }
-
-}
-
-android {
     namespace "com.avilatek.flutter_newpos_sdk_example"
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
    
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    lintOptions {
+    lint {
         checkReleaseBuilds false
     }
 
@@ -55,8 +48,8 @@ android {
         applicationId "com.avilatek.flutter_newpos_sdk_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 21
-        targetSdkVersion flutter.targetSdkVersion
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -76,8 +69,5 @@ flutter {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
-    compileOnly files('libs/mposlib-release.aar')
-    implementation 'com.android.support:multidex:1.0.3'
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
-
-

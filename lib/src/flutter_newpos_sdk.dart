@@ -523,7 +523,8 @@ class FlutterNewposSdk {
     final scanBuffer = _BufferStream.listen(responseStream);
 
     // Invokes the platform method to start the scan
-    await _invokeMethod('scanBlueDevice') as bool;
+    final timeoutMillis = timeout?.inMilliseconds;
+    await _invokeMethod('scanBlueDevice', timeoutMillis) as bool;
 
     // Creates a stream of the scan results, filtered for devices that are still present
     final outputStream = scanBuffer.stream;
@@ -547,7 +548,7 @@ class FlutterNewposSdk {
 
     // Starts a timer to stop the scan after the specified timeout
     if (timeout != null) {
-      _scanTimeout = Timer(_defaultTimeOut, stopScan);
+      _scanTimeout = Timer(timeout, stopScan);
     }
   }
 
@@ -633,7 +634,10 @@ class FlutterNewposSdk {
   ///   print('The POS device could not connect to the Bluetooth device');
   /// }
   /// ```
-  static Future<bool> connectToBluetoothDevice(String macAddress) async {
+  static Future<bool> connectToBluetoothDevice(
+    String macAddress, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     /// Stream method
     final stream = FlutterNewposSdk._methodStream.stream
         .where((m) => m.method == 'OnDeviceConnected')
@@ -645,7 +649,7 @@ class FlutterNewposSdk {
       await _invokeMethod('connectToBluetoothDevice', macAddress);
       final streamOutputs = await getFirstResultInStream(
         stream,
-        const Duration(seconds: 5),
+        timeout,
       );
       final result = streamOutputs ?? false;
       if (result) {
@@ -654,16 +658,26 @@ class FlutterNewposSdk {
       return result;
     } on TimeoutException {
       return false;
-    } catch (e) {
-      throw BluetoothConnectionFailed(code: '');
+    } on PlatformException catch (e) {
+      throw BluetoothConnectionFailed(
+        code: e.code.isNotEmpty ? e.code : 'BLUETOOTH_CONNECTION_FAILED',
+        message: e.message ?? 'Bluetooth connection failed',
+      );
+    } catch (_) {
+      throw BluetoothConnectionFailed(code: 'BLUETOOTH_CONNECTION_FAILED');
     }
   }
 
   static Future<ReadCardInfo?> getCardNumber() async {
     /// Stream method
     final stream = FlutterNewposSdk._methodStream.stream
-        .where((m) => m.method == 'OnGetReadCardInfo')
+        .where((m) =>
+            m.method == 'OnGetReadCardInfo' ||
+            m.method == 'OnGetReadCardInfoError')
         .map((m) {
+      if (m.method == 'OnGetReadCardInfoError') {
+        return null;
+      }
       final arguments = m.arguments as Map<Object?, Object?>;
       final convertedMap = <String, dynamic>{};
       arguments.forEach((key, value) {
@@ -680,8 +694,12 @@ class FlutterNewposSdk {
         const Duration(seconds: 30),
       );
 
-      // ! Puede devolver true, pero con un resultado que no es exitoso
-
+      if (streamOutput == null) {
+        throw const FlutterPosException(
+          code: 'GET_CARD_NUMBER_ERROR',
+          message: 'Error getting card information',
+        );
+      }
       return streamOutput;
     } on TimeoutException {
       rethrow;
@@ -765,8 +783,13 @@ class FlutterNewposSdk {
       // 2. Filter the stream to only get relevant events.
       // 3. Map the event to a `ReadCardInfo` object using conversion logic.
       final stream = FlutterNewposSdk._methodStream.stream
-          .where((m) => m.method == 'OnGetReadCardInfo')
+          .where((m) =>
+              m.method == 'OnGetReadCardInfo' ||
+              m.method == 'OnGetReadCardInfoError')
           .map((m) {
+        if (m.method == 'OnGetReadCardInfoError') {
+          return null;
+        }
         final arguments = m.arguments as Map<Object?, Object?>;
         final convertedMap = <String, dynamic>{};
         arguments.forEach((key, value) {
@@ -895,6 +918,9 @@ class FlutterNewposSdk {
     final arguments = call.arguments;
     // keep track of adapter states
     if (call.method == 'scanBluetoothDevices') {}
+    if (call.method == 'OnDeviceConnection' && arguments is bool) {
+      _isConnectedToDevice.add(arguments);
+    }
 
     _methodStream.add(call);
   }
