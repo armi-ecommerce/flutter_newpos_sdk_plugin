@@ -4,9 +4,17 @@ class FlutterPosException implements Exception {
   const FlutterPosException({
     required this.code,
     required this.message,
+    this.details,
   });
   final String code;
   final String message;
+  final Map<String, dynamic>? details;
+
+  @override
+  String toString() {
+    final detailsSummary = details == null ? 'null' : '<redacted>';
+    return 'FlutterPosException(code: $code, message: $message, details: $detailsSummary)';
+  }
 }
 
 class BluetoothConnectionFailed extends FlutterPosException {
