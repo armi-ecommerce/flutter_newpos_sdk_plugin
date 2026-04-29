@@ -27,6 +27,10 @@ import java.util.*
 
 /** FlutterNewposSdkPlugin */
 class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
+  companion object {
+    private const val FLUTTER_ASSET_PACKAGE = "flutter_newpos_sdk"
+  }
+
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -303,7 +307,10 @@ class FlutterNewposSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     assetName: String
   ): Document {
     val applicationContext = flutterPluginBinding.applicationContext
-    val resolvedPath = flutterPluginBinding.flutterAssets.getAssetFilePathByName(assetName)
+    val resolvedPath = flutterPluginBinding.flutterAssets.getAssetFilePathByName(
+        assetName,
+        FLUTTER_ASSET_PACKAGE
+    )
 
     applicationContext.assets.open(resolvedPath).use { input ->
         val documentBuilderFactory = DocumentBuilderFactory.newInstance()
